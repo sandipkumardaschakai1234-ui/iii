@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Typing Practice | Online & Offline</title>
+<style>
+  :root {
+    --bg: #000;
+    --text: #0f0;
+    --mean: #ff0;
+  }
+  body {
+    margin: 0;
+    height: 100vh;
+    background: var(--bg);
+    color: var(--text);
+    font-family: Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    overflow: hidden;
+  }
+
+  /* ⚙️ Settings Panel */
+  #controls {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    z-index: 100;
+  }
+  #menuBtn {
+    background: rgba(0,255,0,0.1);
+    color: var(--text);
+    border: 1px solid rgba(0,255,0,0.3);
+    border-radius: 6px;
+    padding: 6px 10px;
+    cursor: pointer;
+    transition: 0.3s;
+  }
+  #menuBtn:hover { background: rgba(0,255,0,0.2); transform: scale(1.1); }
+
+  /* 🧭 Scrollable Menu Box */
+  #menuContent {
+    display: none;
+    flex-direction: column;
+    gap: 6px;
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid rgba(0,255,0,0.3);
+    border-radius: 8px;
+    padding: 10px;
+    margin-top: 6px;
+    backdrop-filter: blur(4px);
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+
+  #menuContent.show { display: flex; }
+
+  #menuContent::-webkit-scrollbar {
+    width: 8px;
+  }
+  #menuContent::-webkit-scrollbar-thumb {
+    background-color: rgba(0,255,0,0.5);
+    border-radius: 6px;
+  }
+  #menuContent::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(0,255,0,0.8);
+  }
+
+  button, select, input[type=color], input[type=number] {
+    background: transparent;
+    color: var(--text);
+    border: 1px solid rgba(0,255,0,0.3);
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    text-align: center;
+    transition: 0.3s;
+    padding: 4px;
+  }
+  button:hover, select:hover, input[type=color]:hover, input[type=number]:hover {
+    border-color: var(--text);
+    background: rgba(0,255,0,0.1);
+  }
+  input[type=number] { width: 60px; }
+
+  .day { --bg: #fff; --text: #000; --mean: #c45e00; }
+
+  .top {
+    flex: 0 0 40%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    transition: transform 0.3s ease;
+  }
+  #word { font-size: 70px; }
+  #meaning { font-size: 26px; color: var(--mean); }
+  .divider { height: 2px; background: currentColor; opacity: 0.4; animation: glowLine 3s infinite; }
+  .bottom { flex: 1; position: relative; cursor: text; }
+  #typearea {
+    position: absolute;
+    inset: 0;
+    border: none;
+    outline: none;
+    font-size: 80px;
+    color: inherit;
+    background: transparent;
+    padding: 20px;
+    line-height: 1.5;
+    caret-color: var(--text);
+    overflow-y: auto;
+  }
+
+  @keyframes glowLine { 0%,100%{opacity:.4;}50%{opacity:.8;} }
+
+  #feedbackSymbol {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 160px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+  #feedbackSymbol.show { opacity: 1; }
+
+  @keyframes blink { 0%,100%{opacity:1;}50%{opacity:0;} }
+  #feedbackSymbol.blink { animation: blink 0.7s 2; }
+
+  /* 📘 Guideline Overlay */
+  #guideOverlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.95);
+    color: #00ff00;
+    z-index: 1000;
+    display: none;
+    flex-direction: column;
+  }
+  #guideContent {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    font-size: 18px;
+    line-height: 1.6;
+  }
+  #backBtn {
+    align-self: flex-start;
+    margin: 10px;
+    background: rgba(0,255,0,0.1);
+    border: 1px solid rgba(0,255,0,0.3);
+    border-radius: 6px;
+    padding: 6px 12px;
+    cursor: pointer;
+  }
+  #backBtn:hover { background: rgba(0,255,0,0.2); }
+</style>
+</head>
+<body>
+  <div id="controls">
+    <button id="menuBtn">⚙️</button>
+    <div id="menuContent">
+      <button id="themeBtn" title="Change Theme">🌙</button>
+      <select id="modeSelect" title="Mode">
+        <option value="online">🌐</option>
+        <option value="offline">📴</option>
+      </select>
+      <input type="color" id="colorPicker" value="#00ff00" title="Text Color" />
+      <input type="number" id="fontSizeInput" min="20" max="150" value="50" title="Font Size" />
+      <button id="caseBtn" title="Toggle Word Case">A.a</button>
+      <button id="guideBtn" title="Guideline">📘</button>
+      <button id="fullBtn" title="Fullscreen">⛶</button>
+    </div>
+  </div>
+  
+  <div class="top">
+    <div id="word">Loading...</div>
+    <div id="meaning">हिंदी अर्थ लोड हो रहा है...</div>
+  </div>
+  <div class="divider"></div>
+  <div class="bottom">
+    <div id="typearea" contenteditable="true" spellcheck="false"></div>
+  </div>
+  <div id="feedbackSymbol"></div>
+
+  <!-- 📘 Guideline Overlay -->
+  <div id="guideOverlay">
+    <button id="backBtn">⬅ Back</button>
+    <div id="guideContent">
+      <h2>📘 Typing Practice Guide / टाइपिंग अभ्यास मार्गदर्शिका</h2>
+      <p><b>English:</b> This app helps you practice typing with random English words. In online mode, it shows the Hindi meaning of each word automatically. Type the shown word and press Enter to check if it’s correct.</p>
+      <p><b>Hindi:</b> यह ऐप आपको यादृच्छिक अंग्रेज़ी शब्दों के साथ टाइपिंग का अभ्यास करने में मदद करता है। ऑनलाइन मोड में, हर शब्द का हिंदी अर्थ अपने आप दिखता है। दिखाए गए शब्द को टाइप करें और एंटर दबाकर जांचें कि सही है या नहीं।</p>
+      <hr>
+      <p>⚙️ <b>Settings Buttons:</b></p>
+      <ul>
+        <li>🌙 - Change Theme (Dark/Light)</li>
+        <li>🌐 / 📴 - Switch between Online/Offline mode</li>
+        <li>🎨 - Change Text Color (Only main screen)</li>
+        <li>📟 - Font Size Control (Increase or decrease typing text size)</li>
+        <li>A.a - Toggle Word Case (Uppercase/Lowercase)</li>
+        <li>⛶ - Fullscreen On/Off</li>
+      </ul>
+      <p><b>Tip:</b> Type fast but focus on accuracy!</p>
+      <p><b>सुझाव:</b> तेजी से टाइप करें, लेकिन शुद्धता पर ध्यान दें!</p>
+    </div>
+  </div>
+
+  <script>
+    const wordDiv = document.getElementById('word');
+    const meanDiv = document.getElementById('meaning');
+    const typearea = document.getElementById('typearea');
+    const themeBtn = document.getElementById('themeBtn');
+    const modeSelect = document.getElementById('modeSelect');
+    const colorPicker = document.getElementById('colorPicker');
+    const fullBtn = document.getElementById('fullBtn');
+    const feedbackDiv = document.getElementById('feedbackSymbol');
+    const fontSizeInput = document.getElementById('fontSizeInput');
+    const menuBtn = document.getElementById('menuBtn');
+    const menuContent = document.getElementById('menuContent');
+    const caseBtn = document.getElementById('caseBtn');
+    const guideBtn = document.getElementById('guideBtn');
+    const guideOverlay = document.getElementById('guideOverlay');
+    const backBtn = document.getElementById('backBtn');
+
+    let currentWord = "";
+    let isDay = false;
+    let currentMode = "online";
+    let isUpper = false;
+
+    menuBtn.onclick = e => { e.stopPropagation(); menuContent.classList.toggle("show"); };
+    document.addEventListener("click", e => { if (!menuContent.contains(e.target) && e.target !== menuBtn) menuContent.classList.remove("show"); });
+
+    function speak(text, lang = 'en-IN') {
+      if (!('speechSynthesis' in window)) return;
+      window.speechSynthesis.cancel();
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.lang = lang; utter.rate = 1; utter.pitch = 1;
+      window.speechSynthesis.speak(utter);
+    }
+
+    function randomWord() {
+      const letters = "abcdefghijklmnopqrstuvwxyz";
+      return Array.from({length: Math.floor(Math.random() * 5) + 3},
+        () => letters[Math.floor(Math.random() * letters.length)]).join('');
+    }
+
+    async function getOnlineWord() {
+      try {
+        wordDiv.textContent = "Loading...";
+        meanDiv.textContent = "अर्थ लोड हो रहा है...";
+        const randomLetter = String.fromCharCode(97 + Math.floor(Math.random() * 26));
+        const res = await fetch(`https://api.datamuse.com/words?sp=${randomLetter}*&max=50`);
+        const data = await res.json();
+        const randomItem = data[Math.floor(Math.random() * data.length)];
+        currentWord = randomItem.word;
+        if (isUpper) currentWord = currentWord.toUpperCase();
+        wordDiv.textContent = currentWord;
+        const tr = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(currentWord)}&langpair=en|hi`);
+        const mean = await tr.json();
+        meanDiv.textContent = "अर्थ: " + mean.responseData.translatedText;
+      } catch {
+        wordDiv.textContent = "⚠️ नेटवर्क त्रुटि!";
+        meanDiv.textContent = "कृपया इंटरनेट जांचें या Offline मोड चुनें।";
+      }
+    }
+
+    function getOfflineWord() {
+      currentWord = randomWord();
+      if (isUpper) currentWord = currentWord.toUpperCase();
+      wordDiv.textContent = currentWord;
+      meanDiv.textContent = "Offline Mode (कोई अर्थ नहीं)";
+    }
+
+    function loadWord() {
+      typearea.textContent = "";
+      currentMode === "online" ? getOnlineWord() : getOfflineWord();
+    }
+
+    function showFeedbackSymbol(symbol, color, isError = false) {
+      feedbackDiv.textContent = symbol;
+      feedbackDiv.style.color = color;
+      feedbackDiv.classList.add('show');
+      if (isError) feedbackDiv.classList.add('blink');
+      setTimeout(() => feedbackDiv.classList.remove('show','blink'), 150);
+    }
+
+    function checkWord() {
+      const typed = typearea.textContent.trim();
+      if (!typed) { showFeedbackSymbol('⚠️', 'yellow', true); speak('Please type something.', 'en-IN'); return; }
+      if (!currentWord) return;
+      if (typed === currentWord) {
+        showFeedbackSymbol('✅️', 'lime');
+        speak('Right', 'en-IN');
+        setTimeout(loadWord, 150);
+      } else {
+        showFeedbackSymbol('❌', 'red', true);
+        speak('No right', 'en-IN');
+        setTimeout(() => { typearea.textContent = ""; typearea.focus(); }, 150);
+      }
+    }
+
+    typearea.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); checkWord(); } });
+    themeBtn.onclick = () => { isDay = !isDay; document.body.classList.toggle("day", isDay); themeBtn.textContent = isDay ? "🌞" : "🌙"; };
+
+    colorPicker.oninput = e => {
+      const newColor = e.target.value;
+      wordDiv.style.color = newColor;
+      meanDiv.style.color = newColor;
+      typearea.style.color = newColor;
+      feedbackDiv.style.color = newColor;
+    };
+
+    modeSelect.onchange = e => { currentMode = e.target.value; setTimeout(loadWord, 400); };
+    fullBtn.onclick = () => { const el = document.documentElement; !document.fullscreenElement ? el.requestFullscreen() : document.exitFullscreen(); };
+    document.querySelector(".bottom").onclick = () => typearea.focus();
+    fontSizeInput.oninput = e => {
+      const size = e.target.value + "px";
+      typearea.style.fontSize = size;
+      wordDiv.style.fontSize = (parseInt(e.target.value) - 10) + "px";
+      meanDiv.style.fontSize = (parseInt(e.target.value) / 3) + "px";
+    };
+
+    caseBtn.onclick = () => {
+      isUpper = !isUpper;
+      caseBtn.style.color = isUpper ? "lime" : "var(--text)";
+      currentWord = isUpper ? currentWord.toUpperCase() : currentWord.toLowerCase();
+      wordDiv.textContent = currentWord;
+    };
+
+    guideBtn.onclick = () => {
+      guideOverlay.style.display = "flex";
+      document.body.style.overflow = "hidden";
+    };
+    backBtn.onclick = () => {
+      guideOverlay.style.display = "none";
+      document.body.style.overflow = "";
+    };
+
+    // 📱 Swipe or drag to change word
+    let startX = 0, startY = 0;
+    wordDiv.addEventListener("touchstart", e => {
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+    });
+    wordDiv.addEventListener("touchend", e => {
+      const endX = e.changedTouches[0].clientX;
+      const endY = e.changedTouches[0].clientY;
+      const diffX = endX - startX;
+      const diffY = endY - startY;
+      if (Math.abs(diffX) > 80 || Math.abs(diffY) > 80) {
+        wordDiv.style.transition = "transform 0.2s ease, opacity 0.2s ease";
+        wordDiv.style.transform = `translate(${diffX}px, ${diffY}px)`;
+        wordDiv.style.opacity = "0";
+        setTimeout(() => {
+          wordDiv.style.transition = "";
+          wordDiv.style.transform = "";
+          wordDiv.style.opacity = "1";
+          loadWord();
+        }, 200);
+      }
+    });
+
+    // 🌐 Auto Online/Offline Sensor
+    function updateNetworkStatus() {
+      if (navigator.onLine) {
+        currentMode = "online";
+        modeSelect.value = "online";
+        meanDiv.textContent = "Online Mode सक्रिय है (अर्थ दिखेगा)";
+      } else {
+        currentMode = "offline";
+        modeSelect.value = "offline";
+        meanDiv.textContent = "Offline Mode सक्रिय है (अर्थ नहीं)";
+      }
+      loadWord();
+    }
+    window.addEventListener("online", updateNetworkStatus);
+    window.addEventListener("offline", updateNetworkStatus);
+    updateNetworkStatus();
+
+    // 🆕 Set initial font size from the input (default 50)
+    fontSizeInput.dispatchEvent(new Event("input"));
+
+    loadWord();
+  </script>
+</body>
+</html>
